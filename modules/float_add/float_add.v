@@ -21,7 +21,7 @@
 	NORM
 		normalize the sum
 
-	EXCE
+	CHECK_EXCE
 		check for underflow / overflow
 
 	ROUND
@@ -59,8 +59,8 @@ reg [23:0] fl_in_1_frac_norm;
 reg [23:0] fl_in_2_frac_norm;
 
 // are we concerned with biased numbers in this module? yes, write back must be biased
-wire [7:0] fl_in_1_exp_biased = fl_in_1_exp - EXP_BIAS;
-wire [7:0] fl_in_2_exp_biased = fl_in_2_exp - EXP_BIAS;
+wire signed [7:0] fl_in_1_exp_biased = fl_in_1_exp - EXP_BIAS;
+wire signed [7:0] fl_in_2_exp_biased = fl_in_2_exp - EXP_BIAS;
 
 // write back the lower 23 bits of this array
 // must be 25 bits to catch the overflow and renormalize
@@ -68,16 +68,27 @@ wire [24:0] fl_1_less_fl_2 = fl_in_1_frac_norm - fl_in_2_frac_norm;
 wire [24:0] fl_2_less_fl_1 = fl_in_2_frac_norm - fl_in_1_frac_norm;
 wire [24:0] fl_1_plus_fl_2 = fl_in_1_frac_norm + fl_in_2_frac_norm;
 
+reg sign_res;
+reg [7:0] exp_res;
 reg [24:0] add_res;
 
 localparam START 		= 8'b00000001;
 localparam EXP_CMP 		= 8'b00000010;
 localparam ADD 			= 8'b00000100;
 localparam NORM 		= 8'b00001000;
-localparam EXCE 		= 8'b00010000;
+localparam CHECK_EXCE 	= 8'b00010000;
 localparam ROUND 		= 8'b00100000;
 localparam CHECK_NORM	= 8'b01000000;
 localparam DONE 		= 8'b10000000;
+
+wire qStart 	= state[0];
+wire qExeCmp 	= state[1];
+wire qAdd 		= state[2];
+wire qNorm 		= state[3];
+wire qExce 		= state[4];
+wire qRound 	= state[5];
+wire qCheckNorm = state[6];
+wire qDone 		= state[7];
 
 always @(posedge clk or posedge rst) 
 	begin
@@ -124,7 +135,7 @@ always @(posedge clk or posedge rst)
 									fl_in_2_frac_norm <= fl_in_2_frac_norm >> 1'b1;
 								end
 
-							// next state logic
+							// next state logic, exponents must align
 							if(fl_in_1_exp == fl_in_2_exp)
 								state <= ADD;
 						end
@@ -137,51 +148,70 @@ always @(posedge clk or posedge rst)
 
 							// fl1 and fl2 negative, add and assert res sign
 							if(	fl_in_1_neg && fl_in_2_neg)
-								add_res <= fl_1_plus_fl_2;
-
+								begin
+									sign_res <= 1'b1;
+									add_res <= fl_1_plus_fl_2;
+								end
 							// fl1 negative and fl2 positive, assert add_res sign if |fl1| > |fl2|
 							else if(fl_in_1_neg && !fl_in_2_neg)
 								begin
 									if(fl_in_1_frac_norm > fl_in_2_frac_norm)
-									
-										// fl1 is negative, fl2 is positive, fl1 is bigger in magnitude
-										add_res <= fl_1_less_fl_2;
-
+										begin
+											// fl1 is negative, fl2 is positive, fl1 is bigger in magnitude
+											// result is negative, assert sign bit
+											sign_res <= 1'b1;
+											add_res <= fl_1_less_fl_2;
+										end
 									else if(fl_in_1_frac_norm < fl_in_2_frac_norm)
-
-										// fl1 is negative, fl2 is positive, fl2 is bigger in magnitude
-										add_res <= fl_2_less_fl_1;
-
+										begin
+											// fl1 is negative, fl2 is positive, fl2 is bigger in magnitude
+											// result is positive, deassert sign bit
+											sign_res <= 1'b0;
+											add_res <= fl_2_less_fl_1;
+										end
 									else
-
-										// |fl1| = |fl2|, signs are opposite
-										add_res <= {32'b0};
+										begin
+											// |fl1| = |fl2|, signs are opposite
+											// deassert sign bit
+											sign_res <= 1'b0;
+											add_res <= 25'b0;
+										end
 								end
 
 							// fl1 positive and fl2 negative, assert add_res sign if |fl2| > |fl1|
 							else if(!fl_in_1_neg && fl_in_2_neg)
 								begin
 									if(fl_in_1_frac_norm > fl_in_2_frac_norm)
-									
-										// fl1 is positive, fl2 is negative, fl1 is bigger in magnitude
-										add_res <= fl_1_less_fl_2;
-
+										begin
+											// fl1 is positive, fl2 is negative, fl1 is bigger in magnitude
+											// result it positive, deassert sign bit
+											sign_res <= 1'b0;
+											add_res <= fl_1_less_fl_2;
+										end
 									else if(fl_in_1_frac_norm < fl_in_2_frac_norm)
-
-										// fl1 is positve, fl2 is negative, fl2 is bigger in magnitude
-										add_res <= fl_2_less_fl_1;
-
+										begin
+											// fl1 is positve, fl2 is negative, fl2 is bigger in magnitude
+											// result is negative, assert sign bit
+											sign_res <= 1'b1;
+											add_res <= fl_2_less_fl_1;
+										end
 									else
-
-										// |fl1| = |fl2|, signs are opposite
-										add_res <= {32'b0};
+										begin
+											// |fl1| = |fl2|, signs are opposite
+											// deassert sign bit
+											sign_res <= 1'b0;
+											add_res <= 25'b0;
+										end
 								end
 
 							// fl1 and fl2 positive, deassert add_res sign
 							else if(!fl_in_1_neg && !fl_in_2_neg)
-								add_res <= {1'b0, fl_in_1_exp_biased, fl_1_plus_fl_2[22:0]};
+								begin
+									sign_res <= 1'b0;
+									add_res <= fl_1_plus_fl_2;
+								end
 
-							// next state logic
+							// next state logic, unconditionally move to the next state
 							state <= NORM;
 						end
 					NORM 	:
@@ -203,22 +233,43 @@ always @(posedge clk or posedge rst)
 									fl_in_1_exp <= fl_in_1_exp - 1'b1;
 									fl_in_2_exp <= fl_in_2_exp - 1'b1;
 								end
+							// is it possible that we shift through the entire thing and never reach bit 23?
+							// is it possible that there are no more ones left? a denormalized binary round value?
+							// special case 0
 
 
-							if(!add res[24] && add_res[23])
-								state <= EXCE;
+							if(!add_res[24] && add_res[23])
+								state <= CHECK_EXCE;
 						end
-					EXCE 	:
+					CHECK_EXCE 	:
 						begin
-							
+							// check for overflow in the exponent
+							// exp must be <= 127 and >= -126
+
+							if(fl_in_1_exp_biased > 127)
+								begin
+									res <= 32'b1;
+									state <= DONE;
+								end
+							else if(fl_in_1_exp_biased < -126)
+								begin
+									res <= 32'b1;
+									state <= DONE;
+								end
+							else
+								begin
+									state <= ROUND;
+									res <= {sign_res, fl_in_1_exp, add_res[22:0]};
+								end
 						end
 					ROUND 	:
 						begin
-							
+							// TODO: implement rounding hardware, guard, round, sticky
+							state <= CHECK_NORM;
 						end
 					CHECK_NORM :
 						begin
-							
+							state <= DONE;
 						end
 					DONE 	:
 						begin
