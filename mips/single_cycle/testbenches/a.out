@@ -1,112 +1,164 @@
 #! /usr/bin/vvp
 :ivl_version "0.9.7 " "(v0_9_7)";
-:vpi_time_precision - 10;
+:vpi_time_precision - 9;
 :vpi_module "system";
 :vpi_module "v2005_math";
 :vpi_module "va_math";
-S_0xee9d30 .scope module, "test_bench" "test_bench" 2 3;
+S_0x1381e80 .scope module, "test_bench" "test_bench" 2 7;
  .timescale -9 -9;
-v0xf1fb10_0 .net *"_s1", 0 0, L_0xf20430; 1 drivers
-v0xf1fbd0_0 .net *"_s2", 15 0, L_0xf20780; 1 drivers
-v0xf1fc70_0 .var "clk_tb", 0 0;
-v0xf1fd10_0 .var "d_tb", 15 0;
-v0xf1fdf0_0 .net "expected_q", 31 0, L_0xf208b0; 1 drivers
-v0xf1fe70_0 .var/i "num_checks", 31 0;
-v0xf1ff30_0 .var/i "num_errors", 31 0;
-v0xf1ffd0_0 .net "q_tb", 31 0, L_0xf20340; 1 drivers
-E_0xeeac50 .event posedge, v0xf1fc70_0;
-L_0xf20430 .part v0xf1fd10_0, 15, 1;
-LS_0xf20780_0_0 .concat [ 1 1 1 1], L_0xf20430, L_0xf20430, L_0xf20430, L_0xf20430;
-LS_0xf20780_0_4 .concat [ 1 1 1 1], L_0xf20430, L_0xf20430, L_0xf20430, L_0xf20430;
-LS_0xf20780_0_8 .concat [ 1 1 1 1], L_0xf20430, L_0xf20430, L_0xf20430, L_0xf20430;
-LS_0xf20780_0_12 .concat [ 1 1 1 1], L_0xf20430, L_0xf20430, L_0xf20430, L_0xf20430;
-L_0xf20780 .concat [ 4 4 4 4], LS_0xf20780_0_0, LS_0xf20780_0_4, LS_0xf20780_0_8, LS_0xf20780_0_12;
-L_0xf208b0 .concat [ 16 16 0 0], v0xf1fd10_0, L_0xf20780;
-S_0xee93e0 .scope module, "UUT" "sign_ext_16_32" 2 12, 3 7, S_0xee9d30;
- .timescale -9 -10;
-v0xeea770_0 .net *"_s1", 0 0, L_0xf200a0; 1 drivers
-v0xf1f920_0 .net *"_s2", 15 0, L_0xf201c0; 1 drivers
-v0xf1f9c0_0 .net "d", 15 0, v0xf1fd10_0; 1 drivers
-v0xf1fa60_0 .alias "q", 31 0, v0xf1ffd0_0;
-L_0xf200a0 .part v0xf1fd10_0, 15, 1;
-LS_0xf201c0_0_0 .concat [ 1 1 1 1], L_0xf200a0, L_0xf200a0, L_0xf200a0, L_0xf200a0;
-LS_0xf201c0_0_4 .concat [ 1 1 1 1], L_0xf200a0, L_0xf200a0, L_0xf200a0, L_0xf200a0;
-LS_0xf201c0_0_8 .concat [ 1 1 1 1], L_0xf200a0, L_0xf200a0, L_0xf200a0, L_0xf200a0;
-LS_0xf201c0_0_12 .concat [ 1 1 1 1], L_0xf200a0, L_0xf200a0, L_0xf200a0, L_0xf200a0;
-L_0xf201c0 .concat [ 4 4 4 4], LS_0xf201c0_0_0, LS_0xf201c0_0_4, LS_0xf201c0_0_8, LS_0xf201c0_0_12;
-L_0xf20340 .concat [ 16 16 0 0], v0xf1fd10_0, L_0xf201c0;
-    .scope S_0xee9d30;
+v0x13cf660_0 .var "addr_tb", 5 0;
+v0x13cf700_0 .var "clk_tb", 0 0;
+v0x13cf7b0_0 .var "memread_tb", 0 0;
+v0x13cf860_0 .var "memwrite_tb", 0 0;
+v0x13cf940_0 .var/i "num_errors", 31 0;
+v0x13cf9c0_0 .net "rd_tb", 31 0, L_0x13cfda0; 1 drivers
+v0x13cfa40 .array "test_mem", 63 0, 31 0;
+v0x13cfac0_0 .var "wd_tb", 31 0;
+S_0x1381850 .scope module, "UUT" "data_mem_64x32" 2 29, 3 7, S_0x1381e80;
+ .timescale -9 -9;
+L_0x13cf450 .functor XNOR 1, v0x13cf7b0_0, C4<1>, C4<0>, C4<0>;
+v0x1395380_0 .net *"_s0", 0 0, C4<1>; 1 drivers
+v0x13cee30_0 .net *"_s2", 0 0, L_0x13cf450; 1 drivers
+v0x13ceed0_0 .net *"_s4", 31 0, L_0x13cfc70; 1 drivers
+v0x13cef70_0 .net *"_s6", 31 0, C4<xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>; 1 drivers
+v0x13cf020_0 .net "addr", 5 0, v0x13cf660_0; 1 drivers
+v0x13cf0c0_0 .net "clk", 0 0, v0x13cf700_0; 1 drivers
+v0x13cf1a0_0 .var/i "i", 31 0;
+v0x13cf240_0 .net "memread", 0 0, v0x13cf7b0_0; 1 drivers
+v0x13cf330_0 .net "memwrite", 0 0, v0x13cf860_0; 1 drivers
+v0x13cf3d0_0 .alias "rd", 31 0, v0x13cf9c0_0;
+v0x13cf4d0 .array "reg_mem", 63 0, 31 0;
+v0x13cf550_0 .net "wd", 31 0, v0x13cfac0_0; 1 drivers
+E_0x13815a0 .event posedge, v0x13cf0c0_0;
+L_0x13cfc70 .array/port v0x13cf4d0, v0x13cf660_0;
+L_0x13cfda0 .functor MUXZ 32, C4<xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>, L_0x13cfc70, L_0x13cf450, C4<>;
+    .scope S_0x1381850;
 T_0 ;
-    %set/v v0xf1fc70_0, 1, 1;
+    %set/v v0x13cf1a0_0, 0, 32;
+T_0.0 ;
+    %load/v 8, v0x13cf1a0_0, 32;
+   %cmpi/s 8, 64, 32;
+    %jmp/0xz T_0.1, 5;
+    %load/v 8, v0x13cf1a0_0, 32;
+    %ix/getv/s 3, v0x13cf1a0_0;
+    %jmp/1 t_0, 4;
+    %ix/load 0, 32, 0; word width
+    %ix/load 1, 0, 0; part off
+    %assign/av v0x13cf4d0, 0, 8;
+t_0 ;
+    %ix/load 0, 1, 0;
+    %load/vp0/s 8, v0x13cf1a0_0, 32;
+    %set/v v0x13cf1a0_0, 8, 32;
+    %jmp T_0.0;
+T_0.1 ;
     %end;
     .thread T_0;
-    .scope S_0xee9d30;
+    .scope S_0x1381850;
 T_1 ;
-    %delay 50, 0;
-    %load/v 8, v0xf1fc70_0, 1;
-    %inv 8, 1;
-    %set/v v0xf1fc70_0, 8, 1;
+    %wait E_0x13815a0;
+    %load/v 8, v0x13cf330_0, 1;
+    %jmp/0xz  T_1.0, 8;
+    %load/v 8, v0x13cf550_0, 32;
+    %ix/getv 3, v0x13cf020_0;
+    %jmp/1 t_1, 4;
+    %ix/load 0, 32, 0; word width
+    %ix/load 1, 0, 0; part off
+    %assign/av v0x13cf4d0, 0, 8;
+t_1 ;
+T_1.0 ;
     %jmp T_1;
     .thread T_1;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_2 ;
-    %wait E_0xeeac50;
-    %vpi_func 2 17 "$random", 8, 32;
-    %ix/load 0, 16, 0;
-    %assign/v0 v0xf1fd10_0, 0, 8;
+    %delay 5, 0;
+    %load/v 8, v0x13cf700_0, 1;
+    %inv 8, 1;
+    %set/v v0x13cf700_0, 8, 1;
     %jmp T_2;
     .thread T_2;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_3 ;
-    %movi 8, 1000, 11;
-T_3.0 %cmp/s 0, 8, 11;
-    %jmp/0xz T_3.1, 5;
-    %add 8, 1, 11;
-    %wait E_0xeeac50;
-    %jmp T_3.0;
-T_3.1 ;
-    %vpi_call 2 21 "$finish";
+    %vpi_call 2 47 "$dumpfile", "simulation.vcd";
+    %vpi_call 2 48 "$dumpvars", 1'sb0, S_0x1381e80;
     %end;
     .thread T_3;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_4 ;
-    %vpi_call 2 25 "$dumpfile", "simulation.vcd";
-    %vpi_call 2 26 "$dumpvars";
+    %set/v v0x13cf940_0, 0, 32;
     %end;
     .thread T_4;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_5 ;
-    %set/v v0xf1fe70_0, 0, 32;
+    %set/v v0x13cf660_0, 0, 6;
     %end;
     .thread T_5;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_6 ;
-    %set/v v0xf1ff30_0, 0, 32;
+    %set/v v0x13cf860_0, 0, 1;
     %end;
     .thread T_6;
-    .scope S_0xee9d30;
+    .scope S_0x1381e80;
 T_7 ;
-    %wait E_0xeeac50;
-    %load/v 8, v0xf1fe70_0, 32;
-    %mov 40, 39, 1;
-    %addi 8, 1, 33;
-    %set/v v0xf1fe70_0, 8, 32;
-    %load/v 8, v0xf1fdf0_0, 32;
-    %load/v 40, v0xf1ffd0_0, 32;
-    %cmp/u 8, 40, 32;
-    %inv 4, 1;
-    %jmp/0xz  T_7.0, 4;
-    %vpi_call 2 41 "$display", "ERROR: q value %0x does not match the expected value %0x at time %0fns", v0xf1ffd0_0, v0xf1fdf0_0, $realtime;
-    %load/v 8, v0xf1ff30_0, 32;
-    %mov 40, 39, 1;
-    %addi 8, 1, 33;
-    %set/v v0xf1ff30_0, 8, 32;
-T_7.0 ;
-    %jmp T_7;
+    %set/v v0x13cf7b0_0, 0, 1;
+    %end;
     .thread T_7;
+    .scope S_0x1381e80;
+T_8 ;
+    %set/v v0x13cfac0_0, 0, 32;
+    %end;
+    .thread T_8;
+    .scope S_0x1381e80;
+T_9 ;
+    %set/v v0x13cf700_0, 0, 1;
+    %set/v v0x13cf860_0, 1, 1;
+    %movi 8, 64, 8;
+T_9.0 %cmp/s 0, 8, 8;
+    %jmp/0xz T_9.1, 5;
+    %add 8, 1, 8;
+    %vpi_func 2 71 "$random", 16, 32;
+    %set/v v0x13cfac0_0, 16, 32;
+    %load/v 16, v0x13cfac0_0, 32;
+    %ix/getv 3, v0x13cf660_0;
+   %jmp/1 t_2, 4;
+   %ix/load 1, 0, 0;
+   %set/av v0x13cfa40, 16, 32;
+t_2 ;
+    %delay 10, 0;
+    %load/v 16, v0x13cf660_0, 6;
+    %mov 22, 0, 26;
+    %addi 16, 1, 32;
+    %set/v v0x13cf660_0, 16, 6;
+    %jmp T_9.0;
+T_9.1 ;
+    %set/v v0x13cf860_0, 0, 1;
+    %set/v v0x13cf660_0, 0, 6;
+    %set/v v0x13cfac0_0, 2, 32;
+    %set/v v0x13cf7b0_0, 1, 1;
+    %movi 8, 64, 8;
+T_9.2 %cmp/s 0, 8, 8;
+    %jmp/0xz T_9.3, 5;
+    %add 8, 1, 8;
+    %wait E_0x13815a0;
+    %ix/getv 3, v0x13cf660_0;
+    %load/av 16, v0x13cfa40, 32;
+    %load/v 48, v0x13cf9c0_0, 32;
+    %cmp/u 16, 48, 32;
+    %inv 4, 1;
+    %jmp/0xz  T_9.4, 4;
+    %vpi_call 2 84 "$display", "ERROR: q value %0x does not match the expected value %0x at address %d", v0x13cf9c0_0, &A<v0x13cfa40, v0x13cf660_0 >, v0x13cf660_0;
+T_9.4 ;
+    %load/v 16, v0x13cf660_0, 6;
+    %mov 22, 0, 26;
+    %addi 16, 1, 32;
+    %set/v v0x13cf660_0, 16, 6;
+    %jmp T_9.2;
+T_9.3 ;
+    %vpi_call 2 91 "$finish";
+    %end;
+    .thread T_9;
 # The file index is used to find the file name in the following table.
 :file_names 4;
     "N/A";
     "<interactive>";
-    "sign_ext_16_32_tb.v";
-    "../sign_ext_16_32.v";
+    "data_mem_64x32_tb.v";
+    "../data_mem_64x32.v";
