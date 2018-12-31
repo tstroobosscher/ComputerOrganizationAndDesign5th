@@ -23,27 +23,27 @@ module alu(alucont, rd1, rd2, res, zero);
 	always @(*) begin
 		case(alucont)
 			AND		: begin
-				res = rd1 & rd2;
+				res <= rd1 & rd2;
 			end
 			OR 		: begin
-				res = rd1 | rd2;
+				res <= rd1 | rd2;
 			end
 			ADD 	: begin
-				res = rd1 + rd2;
+				res <= rd1 + rd2;
 			end
 			SUB 	: begin
-				res = rd1 - rd2;
+				res <= rd1 - rd2;
 			end
 			SLT 	: begin
-				res = (rd1 < rd2) ? 1 : 0;
+				res <= (rd1 < rd2) ? 1 : 0;
 			end
 			NOR 	: begin
-				res = ~(rd1 | rd2);
+				res <= ~(rd1 | rd2);
 			end
 		endcase
 	end
 
 	// bitwise or on all the bits in the bus
-	assign zero = |res;
+	assign zero = ~(|res);
 
 endmodule
