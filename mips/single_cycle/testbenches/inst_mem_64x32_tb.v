@@ -1,7 +1,9 @@
 `timescale 1ns/1ns
 
 /*
-	Write random values to memory, then read them
+	Write random values to register file, then read them
+
+	iverilog inst_mem_64x32_tb.v ../inst_mem_64x32.v
  */
 
 module test_bench;
@@ -19,21 +21,15 @@ module test_bench;
 	//
 	///////////////////////////////////////////////////////////////////////////
 	
-
-	reg [5:0] addr_tb;
+	reg [5:0] ra_tb;
 	wire [31:0] rd_tb;
-	reg [31:0] wd_tb;
-	reg memwrite_tb;
-	reg memread_tb;
 
 	inst_mem_64x32 UUT(
-		.clk(clk_tb),
-		.addr(addr_tb),
-		.rd(rd_tb),
-		.wd(wd_tb),
-		.memwrite(memwrite_tb),
-		.memread(memread_tb)
+		.ra(ra_tb),
+		.rd(rd_tb)
 		);
+
+	reg [31:0] test_mem [0:31];
 
 	///////////////////////////////////////////////////////////////////////////
 	//
@@ -48,15 +44,7 @@ module test_bench;
 		$dumpvars(0, test_bench);
 	end
 
-	reg [31:0] test_mem [0:63];
-	wire [31:0] expected_data;
-	integer num_errors = 0;
-
-	initial addr_tb = 0;
-	initial memwrite_tb = 0;
-	initial memread_tb = 0;
-	initial wd_tb = 0;
-	initial clk_tb = 0;
+	integer i;
 
 	///////////////////////////////////////////////////////////////////////////
 	//
@@ -67,31 +55,16 @@ module test_bench;
 	///////////////////////////////////////////////////////////////////////////
 
 	initial begin
-
-		// clock is starting high
-		// issues coming from write synchronization
-		// need to consider the whole clock cycle and the read/write 
-		// characteristics of the module
-		memwrite_tb = 1'b1;
-		repeat(64) begin
-			wd_tb = $random;
-			test_mem[addr_tb] = wd_tb;
-			#10;
-			addr_tb = addr_tb + 1;
+		for(i = 0; i < 63; i = i + 1) begin
+			UUT.memory[i] = $random;
+			test_mem[i] = UUT.memory[i];
 		end
 
-		memwrite_tb = 1'b0;
-		addr_tb = 0;
-		wd_tb = 32'bX;
-
-		memread_tb = 1'b1;
-		repeat(64) @(posedge clk_tb) begin
-			if(test_mem[addr_tb] != rd_tb) begin
+		for(ra_tb = 0; ra_tb < 63; ra_tb = ra_tb + 1) begin
+			if(test_mem[ra_tb] != rd_tb) begin
 				$display("ERROR: q value %0x does not match the expected value %0x at address %d", 
-					rd_tb, test_mem[addr_tb], addr_tb);
-				num_errors = num_errors + 1;
+					rd_tb, test_mem[ra_tb], ra_tb);
 			end
-			addr_tb = addr_tb + 1;
 		end
 
 		$finish;

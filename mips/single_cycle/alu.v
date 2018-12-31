@@ -1,4 +1,4 @@
-`timescale 1 ns / 100 ps
+`timescale 1ns/1ps
 
 /*
 	32 bit mips alu
@@ -6,13 +6,12 @@
 	signed/unsigned ops?
  */
 
-module alu(alucont, rd1, rd2, res, zero)
+module alu(alucont, rd1, rd2, res, zero);
 	input [3:0] alucont;
 	input [31:0] rd1;
 	input [31:0] rd2;
-
-	output [31:0] res
-	output zero;
+	output reg [31:0] res;
+	output wire zero;
 
 	localparam AND 	= 4'b0000;
 	localparam OR 	= 4'b0001;
@@ -36,12 +35,15 @@ module alu(alucont, rd1, rd2, res, zero)
 				res = rd1 - rd2;
 			end
 			SLT 	: begin
-				res = rd1 < rd2 : 1 ? 0;
+				res = (rd1 < rd2) ? 1 : 0;
 			end
 			NOR 	: begin
-				res = ~(rd1 & rd2);
+				res = ~(rd1 | rd2);
 			end
 		endcase
 	end
+
+	// bitwise or on all the bits in the bus
+	assign zero = |res;
 
 endmodule
