@@ -1,9 +1,9 @@
 `timescale 1ns/1ns
 
 /*
-	Write random values to memory, then read them
+	Write random values to register file, then read them
 
-	iverilog data_mem_64x32_tb.v ../data_mem_64x32.v
+	iverilog register_file_tb.v ../register_file.v
  */
 
 module test_bench;
@@ -21,20 +21,23 @@ module test_bench;
 	//
 	///////////////////////////////////////////////////////////////////////////
 	
-
-	reg [5:0] addr_tb;
-	wire [31:0] rd_tb;
+	reg [4:0] ra1_tb;
+	reg [4:0] ra2_tb;
+	reg [4:0] wa_tb;
 	reg [31:0] wd_tb;
-	reg memwrite_tb;
-	reg memread_tb;
+	wire [31:0] rd1_tb;
+	wire [31:0] rd2_tb;
+	reg regwrite_tb;
 
-	data_mem_64x32 UUT(
+	register_file UUT(
 		.clk(clk_tb),
-		.addr(addr_tb),
-		.rd(rd_tb),
+		.ra1(ra1_tb),
+		.ra2(ra2_tb),
+		.wa(wa_tb),
 		.wd(wd_tb),
-		.memwrite(memwrite_tb),
-		.memread(memread_tb)
+		.rd1(rd1_tb),
+		.rd2(rd2_tb),
+		.regwrite(regwrite_tb)
 		);
 
 	///////////////////////////////////////////////////////////////////////////
@@ -50,15 +53,14 @@ module test_bench;
 		$dumpvars(0, test_bench);
 	end
 
-	reg [31:0] test_mem [0:63];
+	reg [31:0] test_mem [0:31];
 	wire [31:0] expected_data;
 	integer num_errors = 0;
 
-	initial addr_tb = 0;
-	initial memwrite_tb = 0;
-	initial memread_tb = 0;
-	initial wd_tb = 0;
+	initial wa_tb = 0;
 	initial clk_tb = 0;
+	initial ra1_tb = 0;
+	initial ra2_tb = 1;
 
 	///////////////////////////////////////////////////////////////////////////
 	//
@@ -74,26 +76,32 @@ module test_bench;
 		// issues coming from write synchronization
 		// need to consider the whole clock cycle and the read/write 
 		// characteristics of the module
-		memwrite_tb = 1'b1;
-		repeat(64) begin
+		regwrite_tb = 1'b1;
+		repeat(32) begin
 			wd_tb = $random;
-			test_mem[addr_tb] = wd_tb;
+			test_mem[wa_tb] = wd_tb;
 			#10;
-			addr_tb = addr_tb + 1;
+			wa_tb = wa_tb + 1;
 		end
 
-		memwrite_tb = 1'b0;
-		addr_tb = 0;
+		regwrite_tb = 1'b0;
+		wa_tb = 0;
 		wd_tb = 32'bX;
 
-		memread_tb = 1'b1;
-		repeat(64) @(posedge clk_tb) begin
-			if(test_mem[addr_tb] != rd_tb) begin
+		repeat(16) @(posedge clk_tb) begin
+			if(rd1_tb != test_mem[ra1_tb]) begin
 				$display("ERROR: q value %0x does not match the expected value %0x at address %d", 
-					rd_tb, test_mem[addr_tb], addr_tb);
+					rd1_tb, test_mem[ra1_tb], ra1_tb);
 				num_errors = num_errors + 1;
 			end
-			addr_tb = addr_tb + 1;
+			if(rd2_tb != test_mem[ra2_tb]) begin
+				$display("ERROR: q value %0x does not match the expected value %0x at address %d", 
+					rd2_tb, test_mem[ra2_tb], ra2_tb);
+				num_errors = num_errors + 1;
+			end
+			#10;
+			ra1_tb = ra1_tb + 2;
+			ra2_tb = ra2_tb + 2;
 		end
 
 		$finish;
