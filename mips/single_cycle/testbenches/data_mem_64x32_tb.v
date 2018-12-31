@@ -2,6 +2,8 @@
 
 /*
 	Write random values to memory, then read them
+
+	iverilog data_mem_64x32_tb.v ../data_mem_64x32.v
  */
 
 module test_bench;
