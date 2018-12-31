@@ -13,6 +13,24 @@
 		AND
 		LW
 		SW
+
+	R-Type
+	    OP      RS      RT      RD    SHAMT FUNCT
+	|-------|-------|-------|-------|------|-----|
+	  31:26   25:21   20:16   15:11   10:6   5:0
+
+	LW/SW
+	    OP      RS      RT         ADDRESS
+	|-------|-------|-------|--------------------|
+	  31:26   25:21   20:16         15:0
+
+	Branch
+        OP      RS      RT         ADDRESS
+	|-------|-------|-------|--------------------|
+	  31:26   25:21   20:16         15:0
+
+
+	Need resets for the modules
  */
 
 module single_cycle_mips_32(clk, rst);
@@ -23,7 +41,7 @@ module single_cycle_mips_32(clk, rst);
 	//
 	//	Control Lines
 	//	
-	//	Need control module for control lines, maps instruction[31:26] to lines
+	//	Control module for control lines, maps instruction[31:26] to lines
 	//
 	///////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +60,15 @@ module single_cycle_mips_32(clk, rst);
 	reg RegWrite;
 
 	wire [31:0] instruction;
+
+	initial RegDst = 1'b0;
+	initial Branch = 1'b0;
+	initial MemRead = 1'b0;
+	initial MemToReg = 1'b0;
+	initial AluOP = 2'b00;
+	initial MemWrite = 1'b0;
+	initial ALUSrc = 1'b0;
+	initial RegWrite = 1'b0;
 
 	always @(*) begin
 		case(instruction[31:26])
@@ -134,6 +161,8 @@ module single_cycle_mips_32(clk, rst);
 	wire [31:0] next_instruction;
 	reg [31:0] program_counter;
 
+	initial program_counter = 32'b0;
+
 	// assign next_instruction after address calculation modules
 
 	always @(posedge clk or posedge rst) begin
@@ -158,7 +187,7 @@ module single_cycle_mips_32(clk, rst);
 	///////////////////////////////////////////////////////////////////////////	
 
 	inst_mem_64x32 inst_mem(
-		.ra(program_counter[5:0]),
+		.ra(program_counter[7:2]),
 		.rd(instruction)
 		);
 
@@ -185,7 +214,7 @@ module single_cycle_mips_32(clk, rst);
 		.wa(write_address),
 		.wd(write_data),
 		.rd1(read_data_1),
-		.rd2(read_data_1),
+		.rd2(read_data_2),
 		.regwrite(RegWrite)
 		);
 
@@ -213,6 +242,7 @@ module single_cycle_mips_32(clk, rst);
 	///////////////////////////////////////////////////////////////////////////	
 
 	reg [3:0] alu_control;
+	initial alu_control = 0;
 
 	localparam AND 	= 4'b0000;
 	localparam OR 	= 4'b0001;

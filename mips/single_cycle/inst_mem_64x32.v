@@ -11,4 +11,7 @@ module inst_mem_64x32(ra, rd);
 	reg [31:0] memory [0:63];
 
 	assign rd = memory[ra];
+
+	integer i;
+	
 endmodule
