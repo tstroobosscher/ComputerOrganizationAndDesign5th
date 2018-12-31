@@ -16,22 +16,22 @@ module register_file(clk, ra1, ra2, wa, wd, rd1, rd2, regwrite);
 	input regwrite;
 
 	// 32 element array of 32 bit wide registers
-	reg [31:0] reg_file [0:31];
+	reg [31:0] memory [0:31];
 
 	integer i;
 
 	initial begin
 		for(i = 0; i < 32; i = i + 1)
-			reg_file[i] = i;
+			memory[i] = i;
 	end
 
-	assign rd1 = reg_file[ra1];
-	assign rd2 = reg_file[ra2];
+	assign rd1 = memory[ra1];
+	assign rd2 = memory[ra2];
 
 	always @(posedge clk) 
 	begin
 		if(regwrite)
-			reg_file[wa] <= wd;	
+			memory[wa] <= wd;	
 	end
 
 endmodule
