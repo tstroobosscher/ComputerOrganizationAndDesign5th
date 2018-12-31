@@ -2,6 +2,8 @@
 
 /*
 	Write random values to memory, then read them
+
+	iverilog ../alu.v alu_tb.v
  */
 
 module test_bench;
