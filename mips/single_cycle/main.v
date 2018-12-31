@@ -17,12 +17,13 @@ module single_cycle_mips_32(clk, rst);
 	///////////////////////////////////////////////////////////////////////////
 
 	wire RegDst;
-	wire RegWrite;
-	wire ALUSrc;
-	wire PCSrc;
-	wire MemWrite;
+	wire Branch;
 	wire MemRead;
 	wire MemToReg;
+	wire [1:0] AluOP;
+	wire MemWrite;
+	wire ALUSrc;
+	wire RegWrite;
 
 	///////////////////////////////////////////////////////////////////////////
 	//
@@ -111,7 +112,7 @@ module single_cycle_mips_32(clk, rst);
 	//
 	//	ALU
 	//	
-	//	Need ALU control unit, takes in ALUOP and funct field
+	//	Need ALU control unit, takes in AluOP and funct field
 	//	and outputs the alu control lines
 	///////////////////////////////////////////////////////////////////////////	
 
@@ -144,7 +145,9 @@ module single_cycle_mips_32(clk, rst);
 
 	wire [31:0] address_calc;
 	wire [31:0] immediate_shift_left_2;
+	wire PCSrc;
 
+	assign PCSrc = Branch & alu_zero;
 	assign immediate_shift_left_2 = {sign_extended_immediate_16[29:2], 2'b0};
 	assign address_calc = program_counter_plus_4 + immediate_shift_left_2;
 	assign next_instruction = PCSrc ? address_calc : program_counter_plus_4;
