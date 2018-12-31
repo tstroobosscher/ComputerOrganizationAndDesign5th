@@ -2,6 +2,17 @@
 
 /*
 	single cycle mips implementation
+
+	Supported instructions:
+		BEQ
+		SUB
+		ADD
+		OR
+		SLT
+		NOR
+		AND
+		LW
+		SW
  */
 
 module single_cycle_mips_32(clk, rst);

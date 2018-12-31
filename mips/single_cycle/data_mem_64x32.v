@@ -17,22 +17,22 @@ module data_mem_64x32(clk, addr, rd, wd, memwrite, memread);
 	input memwrite;
 	input memread;
 
-	reg [31:0] reg_mem [0:63];
+	reg [31:0] memory [0:63];
 
 	integer i;
 
 	initial begin
 		for(i = 0; i < 64; i = i + 1)
-			reg_mem[i] <= i;
+			memory[i] <= i;
 	end
 
 
 	// data is not available until the next clock cycle
 	always @(posedge clk) begin
 		if (memwrite == 1'b1)
-			reg_mem[addr] <= wd;
+			memory[addr] <= wd;
 	end
 
-	assign rd = (memread == 1'b1) ? reg_mem[addr] : 32'bX;
+	assign rd = (memread == 1'b1) ? memory[addr] : 32'bX;
 
 endmodule
