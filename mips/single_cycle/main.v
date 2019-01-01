@@ -160,18 +160,26 @@ module single_cycle_mips_32(clk, rst);
 
 	wire [31:0] next_instruction;
 	reg [31:0] program_counter;
+	reg pc_init;
 
+	initial pc_init = 1'b0;
 	initial program_counter = 32'b0;
 
 	// assign next_instruction after address calculation modules
-
+	// and also save logic for reset and first instruction
 	always @(posedge clk or posedge rst) begin
 		if (rst) begin
 			// reset precedence
-			program_counter <= 32'b0;
+			program_counter <= 32'bX;
 		end
 		else begin
-			program_counter <= next_instruction;
+			if(~pc_init) begin
+				program_counter <= 32'b0;
+				pc_init <= 1'b1;
+			end
+			else begin
+				program_counter <= next_instruction;	
+			end
 		end
 	end
 
@@ -278,6 +286,8 @@ module single_cycle_mips_32(clk, rst);
 				alu_control <= OR;
 			else if(funct_control[3:0] == 4'b1010)
 				alu_control <= SLT;
+			else if(funct_control[3:0] == 4'b0111)
+				alu_control <= NOR;
 			else
 				alu_control <= 4'bXXXX;
 		end
@@ -314,7 +324,7 @@ module single_cycle_mips_32(clk, rst);
 	wire PCSrc;
 
 	assign PCSrc = Branch & alu_zero;
-	assign immediate_shift_left_2 = {sign_extended_immediate_16[29:2], 2'b0};
+	assign immediate_shift_left_2 = {sign_extended_immediate_16[29:0], 2'b0};
 	assign address_calc = program_counter_plus_4 + immediate_shift_left_2;
 	assign next_instruction = PCSrc ? address_calc : program_counter_plus_4;
 

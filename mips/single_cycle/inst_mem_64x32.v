@@ -1,7 +1,7 @@
-`timescale 1 ns / 100 ps
+`timescale 1ns/1ns
 
 /*
-
+	holds preloaded program, is addressed by the program counter
 */
 
 module inst_mem_64x32(ra, rd);
@@ -13,5 +13,5 @@ module inst_mem_64x32(ra, rd);
 	assign rd = memory[ra];
 
 	integer i;
-	
+
 endmodule

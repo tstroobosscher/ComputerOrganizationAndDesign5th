@@ -1,4 +1,4 @@
-`timescale 1 ns / 100 ps
+`timescale 1ns/1ns
 
 /*
 	register file implemented based on the description 
