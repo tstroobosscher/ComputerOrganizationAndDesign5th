@@ -29,6 +29,11 @@
 	|-------|-------|-------|--------------------|
 	  31:26   25:21   20:16         15:0
 
+	Jump
+        OP               ADDRESS
+	|-------|------------------------------------|
+	  31:26               25:0
+
 
 	Need resets for the modules
  */
@@ -49,6 +54,7 @@ module single_cycle_mips_32(clk, rst);
 	localparam LOAD_WORD 	= 6'b100011;
 	localparam STORE_WORD 	= 6'b101011;
 	localparam BRANCH_EQ	= 6'b000100;
+	localparam JUMP 		= 6'b000010;
 
 	reg RegDst;
 	reg Branch;
@@ -58,6 +64,7 @@ module single_cycle_mips_32(clk, rst);
 	reg MemWrite;
 	reg ALUSrc;
 	reg RegWrite;
+	reg Jump;
 
 	wire [31:0] instruction;
 
@@ -69,6 +76,7 @@ module single_cycle_mips_32(clk, rst);
 	initial MemWrite = 1'b0;
 	initial ALUSrc = 1'b0;
 	initial RegWrite = 1'b0;
+	initial Jump = 1'b0;
 
 	always @(*) begin
 		case(instruction[31:26])
@@ -89,6 +97,8 @@ module single_cycle_mips_32(clk, rst);
 				Branch <= 1'b0;
 				// aluop 10 is R-type
 				AluOP <= 2'b10;
+				// not jump
+				Jump <= 1'b0;
 			end
 			LOAD_WORD 	: begin
 				// writing mem data back to register file 
@@ -107,6 +117,8 @@ module single_cycle_mips_32(clk, rst);
 				Branch <= 1'b0;
 				// add address and immediate
 				AluOP <= 2'b00;
+				// not jump
+				Jump <= 1'b0;
 			end
 			STORE_WORD 	: begin
 				// second data field not used
@@ -125,6 +137,8 @@ module single_cycle_mips_32(clk, rst);
 				Branch <= 1'b0;
 				// calculate address from immediate and PC+4
 				AluOP <= 2'b00;
+				// not jump
+				Jump <= 1'b0;
 			end
 			BRANCH_EQ 	: begin
 				// no third field necessary
@@ -143,6 +157,28 @@ module single_cycle_mips_32(clk, rst);
 				Branch = 1'b1;
 				// check if zero subtract
 				AluOP <= 2'b01;
+				// not jump
+				Jump <= 1'b0;
+			end
+			JUMP 	: begin
+				// no third field necessary
+				RegDst <= 1'bX;
+				// path not used in jump
+				ALUSrc <= 1'bX;
+				// not writing back from memory to register
+				MemToReg <= 1'bX;
+				// not writing to register, prevent corruption
+				RegWrite <= 1'b0;
+				// not reading from register
+				MemRead <= 1'bX;
+				// not writing to memory, prevent corruption
+				MemWrite <= 1'b0;
+				// branch if zero
+				Branch = 1'bX;
+				// check if zero subtract
+				AluOP <= 2'bX;
+				// jump!
+				Jump <= 1'b1;
 			end
 			default begin
 				
@@ -322,11 +358,15 @@ module single_cycle_mips_32(clk, rst);
 	wire [31:0] address_calc;
 	wire [31:0] immediate_shift_left_2;
 	wire PCSrc;
+	wire [31:0] pre_jump_inst;
+	wire [31:0] jump_address;
 
+	assign jump_address = {program_counter_plus_4[31:28], instruction[25:0], 2'b0};
 	assign PCSrc = Branch & alu_zero;
 	assign immediate_shift_left_2 = {sign_extended_immediate_16[29:0], 2'b0};
 	assign address_calc = program_counter_plus_4 + immediate_shift_left_2;
-	assign next_instruction = PCSrc ? address_calc : program_counter_plus_4;
+	assign pre_jump_inst = PCSrc ? address_calc : program_counter_plus_4;
+	assign next_instruction = Jump ? jump_address : pre_jump_inst;
 
 	///////////////////////////////////////////////////////////////////////////
 	//

@@ -16,6 +16,11 @@
 	|-------|-------|-------|---------------------|
 	  31:26   25:21   20:16         15:0
 
+	Jump
+        OP               ADDRESS
+	|-------|------------------------------------|
+	  31:26               25:0
+
 
 	LW $(RT) OFFSET+$(RS)
 	SW $(RT) OFFSET+$(RS)
@@ -75,6 +80,7 @@ module test_bench#(
 	localparam LOAD_WORD 	= 6'b100011;
 	localparam STORE_WORD 	= 6'b101011;
 	localparam BRANCH_EQ	= 6'b000100;
+	localparam JUMP 		= 6'b000010;
 
 	// function field NOT ALUOP
 	localparam AND 			= 6'b100100;
@@ -144,10 +150,14 @@ module test_bench#(
 		UUT.inst_mem.memory[22] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, NOR};
 		UUT.inst_mem.memory[23] = {STORE_WORD, 5'd14, 5'd3, 16'd0};
 
-		// BEQ, can accept a negative offset
-		UUT.inst_mem.memory[24] = {LOAD_WORD, 5'd0, 5'd1, 16'd5};
-		UUT.inst_mem.memory[25] = {LOAD_WORD, 5'd0, 5'd2, 16'd5};
-		UUT.inst_mem.memory[26] = {BRANCH_EQ, 5'd1, 5'd2, -16'd27};
+		// J
+		UUT.inst_mem.memory[24] = {JUMP, 26'd26};
+		UUT.inst_mem.memory[25] = 32'bX;
+
+		// BEQ, can accept a negative offset, 2's compliment is kinda sick
+		UUT.inst_mem.memory[26] = {LOAD_WORD, 5'd0, 5'd1, 16'd5};
+		UUT.inst_mem.memory[27] = {LOAD_WORD, 5'd0, 5'd2, 16'd5};
+		UUT.inst_mem.memory[28] = {BRANCH_EQ, 5'd1, 5'd2, -16'd29};
 
 
 		///////////////////////////////////////////////////////////////////////
@@ -308,6 +318,23 @@ module test_bench#(
 			$display("test_bench: NOR succuess");
 
 		//dump_data();
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	JUMP test
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		// Jump
+		#(CLK_PERIOD-1);
+
+		$display("test_bench: running test: J");
+
+		#1;
+		if(UUT.program_counter[31:2] != 30'd26)
+			$display("test_bench: J failure");
+		else
+			$display("test_bench: J succuess");
 
 		///////////////////////////////////////////////////////////////////////
 		//
