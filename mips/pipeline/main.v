@@ -109,6 +109,7 @@ module single_cycle_mips_32(clk, rst);
 
 		// pipes the instruction and PC + 4, 64 bits
 		reg [63:0] IF_ID_pipe;
+		initial IF_ID_pipe = 64'bX;
 
 		always @(posedge clk or posedge rst) begin
 			if (rst)
@@ -262,7 +263,9 @@ module single_cycle_mips_32(clk, rst);
 			);
 
 		// pipes the control signals, the register data, the immediate data
-		reg [128:0] ID_EX_pipe;
+		// TODO: will need to add more lines for write address
+		reg [127:0] ID_EX_pipe;
+		initial ID_EX_pipe = 128'bX;
 
 		always @(posedge clk or posedge rst) begin
 			if (rst)
@@ -342,50 +345,45 @@ module single_cycle_mips_32(clk, rst);
 				alu_control <= 4'bXXXX;
 		end
 
-		wire [31:0] alu_input_1;
-		wire [31:0] alu_input_2;
-		wire [31:0] alu_result;
-		wire alu_zero;
+		wire [31:0] EX_alu_input_1;
+		wire [31:0] EX_alu_input_2;
+		wire [31:0] EX_alu_result;
+		wire EX_alu_zero;
 
-		assign alu_input_1 = read_data_1;
-		assign alu_input_2 = ALUSrc ? sign_extended_immediate_16 : read_data_2;
+		assign EX_alu_input_1 = EX_read_data_1;
+		assign EX_alu_input_2 = ALUSrc ? EX_sign_ext_imm : EX_read_data_2;
 
 		alu alu(
 			.alucont(alu_control),
-			.rd1(alu_input_1),
-			.rd2(alu_input_2),
-			.res(alu_result),
-			.zero(alu_zero)
+			.rd1(EX_alu_input_1),
+			.rd2(EX_alu_input_2),
+			.res(EX_alu_result),
+			.zero(EX_alu_zero)
 			);
 
-		///////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////
 		//
 		//	Address Calculation -> EX
-		//	
-		//	
-		//	
-		///////////////////////////////////////////////////////////////////////////	
+		//
+		///////////////////////////////////////////////////////////////////////
 
-		wire [31:0] address_calc;
-		wire [31:0] immediate_shift_left_2;
-		wire PCSrc;
-		wire [31:0] MEM_next_instruction;
-		wire [31:0] jump_address;
+		wire [31:0] EX_immediate_shift_left_2;
+		wire [31:0] EX_branch_address;
 
-		assign jump_address = {program_counter_plus_4[31:28], instruction[25:0], 2'b0};
-		assign PCSrc = Branch & alu_zero;
-		assign immediate_shift_left_2 = {sign_extended_immediate_16[29:0], 2'b0};
-		assign address_calc = program_counter_plus_4 + immediate_shift_left_2;
+		assign EX_immediate_shift_left_2 = {EX_sign_ext_imm[29:0], 2'b0};
+		assign EX_branch_address = program_counter_plus_4 + 
+			EX_immediate_shift_left_2;
 
-		reg [:] EX_MEM_pipe;
+		// next inst, zero, ALU res, read_data_2
+		reg [95:0] EX_MEM_pipe;
+		initial EX_MEM_pipe = 96'bX;
 
 		always @(posedge clk or posedge rst) begin
 			if (rst)
 				EX_MEM_pipe <= 128'b0;
-
 			else
-				// 
-				EX_MEM_pipe <= {};
+				EX_MEM_pipe <= {31'b0, EX_alu_zero, EX_branch_address, 
+					EX_alu_result, EX_read_data_2};
 		end
 
 
@@ -395,28 +393,65 @@ module single_cycle_mips_32(clk, rst);
 	//
 	///////////////////////////////////////////////////////////////////////////
 
-		wire [31:0] MEM_next_instruction;
+		wire MEM_zero;
+		wire [31:0] MEM_branch_address;
+		wire [31:0] MEM_alu_result;
+		wire [31:0] MEM_read_data_2;
 
-		///////////////////////////////////////////////////////////////////////////
+		// for branch equality
+		assign MEM_zero = EX_MEM_pipe[96];
+
+		// for IF
+		assign MEM_branch_address = EX_MEM_pipe[95:64];
+
+		// can also bypass data and go straight to WB
+		assign MEM_alu_result = EX_MEM_pipe[63:32];
+
+		// SW data
+		assign MEM_read_data_2 = EX_MEM_pipe[31:0];
+
+		///////////////////////////////////////////////////////////////////////
 		//
 		//	Data Memory -> MEM
-		//	
-		//	RAM
-		//	
-		///////////////////////////////////////////////////////////////////////////
+		//
+		///////////////////////////////////////////////////////////////////////
 
-		wire [31:0] data_mem_data;
+		wire [31:0] MEM_data;
 
 		// lower 6 address bits are focused on because of the address size
 		data_mem_64x32 data_mem(
 			.clk(clk),
-			.addr(alu_result[5:0]),
-			.rd(data_mem_data),
-			.wd(read_data_2),
+			.addr(MEM_alu_result[5:0]),
+			.rd(MEM_data),
+			.wd(MEM_read_data_2),
 			.memwrite(MemWrite),
 			.memread(MemRead)
 			);
 
-		assign write_data = MemToReg ? data_mem_data : alu_result;
+		// next inst, zero, ALU res, read_data_2, MemToReg
+		reg [63:0] MEM_WB_pipe;
+		initial MEM_WB_pipe = 64'bX;
+
+		always @(posedge clk or posedge rst) begin
+			if (rst)
+				MEM_WB_pipe <= 64'b0;
+			else
+				// mem data, alu_result
+				MEM_WB_pipe <= {MEM_data, MEM_read_data_2};
+		end
+
+	///////////////////////////////////////////////////////////////////////////
+	//
+	// WB stage
+	//
+	///////////////////////////////////////////////////////////////////////////
+
+		wire [31:0] WB_data;
+		wire [31:0] WB_alu_result;
+		wire [31:0] WB_write_back;
+
+		assign WB_data = MEM_WB_pipe[63:32];
+		assign WB_alu_result = MEM_WB_pipe[31:0];
+		assign WB_write_back = MemToReg ? WB_data : WB_alu_result;
 
 endmodule
