@@ -1,0 +1,54 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Mon Dec 31 17:35:04 2018
+[*]
+[dumpfile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/single_cycle/simulation.vcd"
+[dumpfile_mtime] "Mon Dec 31 17:34:12 2018"
+[dumpfile_size] 99791
+[savefile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/single_cycle/test.gtkw"
+[timestart] 0
+[size] 1855 1056
+[pos] -856 -429
+*-13.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_bench.
+[sst_width] 225
+[signals_width] 286
+[sst_expanded] 1
+[sst_vpaned_height] 320
+@28
+test_bench.UUT.ALUSrc
+test_bench.UUT.AluOP[1:0]
+test_bench.UUT.Branch
+test_bench.UUT.MemRead
+test_bench.UUT.MemToReg
+test_bench.UUT.MemWrite
+test_bench.UUT.PCSrc
+test_bench.UUT.RegDst
+test_bench.UUT.RegWrite
+@22
+test_bench.UUT.address_calc[31:0]
+test_bench.UUT.alu_control[3:0]
+test_bench.UUT.alu_input_1[31:0]
+test_bench.UUT.alu_input_2[31:0]
+test_bench.UUT.alu_result[31:0]
+@28
+test_bench.UUT.alu_zero
+test_bench.UUT.clk
+@22
+test_bench.UUT.data_mem_data[31:0]
+test_bench.UUT.funct_control[5:0]
+test_bench.UUT.immediate_shift_left_2[31:0]
+test_bench.UUT.instruction[31:0]
+test_bench.UUT.next_instruction[31:0]
+test_bench.UUT.program_counter[31:0]
+test_bench.UUT.program_counter_plus_4[31:0]
+test_bench.UUT.read_data_1[31:0]
+test_bench.UUT.read_data_2[31:0]
+@28
+test_bench.UUT.rst
+@22
+test_bench.UUT.sign_extended_immediate_16[31:0]
+test_bench.UUT.write_address[4:0]
+test_bench.UUT.write_data[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
