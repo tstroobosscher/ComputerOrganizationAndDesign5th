@@ -165,7 +165,7 @@ module single_cycle_mips_32(clk, rst);
 		initial ID_RegWrite = 1'b0;
 
 		always @(*) begin
-			case(instruction[31:26])
+			case(ID_instruction[31:26])
 				R_TYPE 	: begin
 					// R type uses both data addresses and a result address
 					ID_RegDst <= 1'b1;
@@ -433,7 +433,7 @@ module single_cycle_mips_32(clk, rst);
 
 		assign EX_immediate_shift_left_2 = {EX_sign_ext_immediate_32[29:0], 
 			2'b0};
-		assign EX_branch_address = program_counter_plus_4 + 
+		assign EX_branch_address = EX_program_counter_plus_4 + 
 			EX_immediate_shift_left_2;
 
 		///////////////////////////////////////////////////////////////////////
@@ -530,10 +530,10 @@ module single_cycle_mips_32(clk, rst);
 		///////////////////////////////////////////////////////////////////////
 
 		wire [1:0] MEM_control_signals;
-		assign MEM_control_signals = {RegWrite, MemToReg}
+		assign MEM_control_signals = {MEM_RegWrite, MEM_MemToReg};
 
 		// next inst, zero, ALU res, read_data_2, ID_MemToReg
-		reg [96:0] MEM_WB_pipe;
+		reg [95:0] MEM_WB_pipe;
 		initial MEM_WB_pipe = 96'bX;
 
 		always @(posedge clk or posedge rst) begin
