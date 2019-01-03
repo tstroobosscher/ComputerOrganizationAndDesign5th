@@ -78,7 +78,7 @@ module single_cycle_mips_32(clk, rst);
 
 		assign IF_program_counter_plus_4 = IF_program_counter + 4;
 		// PCSrc comes from the Mem stage
-		assign IF_next_instruction = ID_PCSrc ? MEM_next_instruction : 
+		assign IF_next_instruction = MEM_PCSrc ? MEM_next_instruction : 
 			IF_program_counter_plus_4;
 
 		// save logic for reset and first instruction
@@ -145,6 +145,7 @@ module single_cycle_mips_32(clk, rst);
 		localparam R_TYPE 		= 6'b000000;
 		localparam LOAD_WORD 	= 6'b100011;
 		localparam STORE_WORD 	= 6'b101011;
+		localparam BRANCH 		= 6'b000100;
 
 		reg ID_RegDst;
 		reg ID_PCSrc;
@@ -182,7 +183,7 @@ module single_cycle_mips_32(clk, rst);
 					// aluop 10 is R-type
 					ID_AluOP <= 2'b10;
 					// increment PC
-					ID_PCSrc <= 1'b0;
+					ID_Branch <= 1'b0;
 				end
 				LOAD_WORD 	: begin
 					// writing mem data back to register file 
@@ -200,7 +201,7 @@ module single_cycle_mips_32(clk, rst);
 					// add address and immediate
 					ID_AluOP <= 2'b00;
 					// increment PC
-					ID_PCSrc <= 1'b0;
+					ID_Branch <= 1'b0;
 				end
 				STORE_WORD 	: begin
 					// second data field not used
@@ -218,7 +219,24 @@ module single_cycle_mips_32(clk, rst);
 					// calculate address from immediate and PC+4
 					ID_AluOP <= 2'b00;
 					// increment PC
-					ID_PCSrc <= 1'b0;
+					ID_Branch <= 1'b0;
+				BRANCH 		: begin
+					// second data field not used
+					ID_RegDst <= 1'bX;
+					// send immediate field to alu
+					ID_ALUSrc <= 1'b0;
+					// not writing data back to register
+					ID_MemToReg <= 1'bX;
+					// prevent register corruption
+					ID_RegWrite <= 1'b0;
+					// prevent RAM corruption, this might not matter
+					ID_MemRead <= 1'b0;
+					// write data to appropriate address
+					ID_MemWrite <= 1'b0; 
+					// sub
+					ID_AluOP <= 2'b01;
+					// branch
+					ID_Branch <= 1'b1;
 				end
 				default begin
 
@@ -241,10 +259,6 @@ module single_cycle_mips_32(clk, rst);
 		//	
 		///////////////////////////////////////////////////////////////////////
 
-		// TODO
-		// write addresses need to be bussed through the pipeline
-		wire [4:0] reg_file_write_address;
-
 		// assign write data after mem access
 		wire [31:0] reg_file_write_data;
 		wire [31:0] ID_read_data_1;
@@ -254,8 +268,8 @@ module single_cycle_mips_32(clk, rst);
 			.clk(clk),
 			.ra1(ID_instruction[25:21]),
 			.ra2(ID_instruction[20:16]),
-			.wa(reg_file_write_address),
-			.wd(reg_file_write_data),
+			.wa(WB_reg_file_write_address),
+			.wd(WB_write_back_data),
 			.rd1(ID_read_data_1),
 			.rd2(ID_read_data_2),
 			.regwrite(WB_RegWrite)
@@ -288,10 +302,8 @@ module single_cycle_mips_32(clk, rst);
 
 		wire [8:0] ID_control_signals;
 		assign ID_control_signals = {ID_RegDst, ID_ALUSrc, ID_MemToReg, 
-			ID_RegWrite, ID_MemRead, ID_MemWrite, ID_AluOP, ID_PCSrc};
+			ID_RegWrite, ID_MemRead, ID_MemWrite, ID_AluOP, ID_Branch};
 
-		// pipes the control signals, the register data, the immediate data
-		// TODO: will need to add more lines for write address
 		reg [159:0] ID_EX_pipe;
 		initial ID_EX_pipe = 160'bX;
 
@@ -330,7 +342,7 @@ module single_cycle_mips_32(clk, rst);
 		wire EX_MemRead;
 		wire EX_MemWrite;
 		wire EX_AluOP;
-		wire EX_PCSrc;
+		wire EX_Branch;
 
 		assign EX_RegDst = ID_EX_pipe[136];
 		assign EX_ALUSrc = ID_EX_pipe[135];
@@ -339,7 +351,7 @@ module single_cycle_mips_32(clk, rst);
 		assign EX_MemRead = ID_EX_pipe[132];
 		assign EX_MemWrite = ID_EX_pipe[131];
 		assign EX_AluOP = ID_EX_pipe[130:129];
-		assign EX_PCSrc = ID_EX_pipe[128];
+		assign EX_Branch = ID_EX_pipe[128];
 
 		wire [31:0] EX_program_counter_plus_4;
 		wire [31:0] EX_read_data_1;
@@ -442,23 +454,24 @@ module single_cycle_mips_32(clk, rst);
 		//
 		///////////////////////////////////////////////////////////////////////
 
+		wire [4:0] EX_reg_file_write_address;
 		assign EX_reg_file_write_address = EX_RegDst ? EX_rd : EX_rt;
 
 		wire [4:0] EX_control_signals;
 		assign EX_control_signals = {EX_MemToReg, EX_RegWrite, EX_MemRead, 
-			EX_MemWrite, EX_PCSrc};
+			EX_MemWrite, EX_Branch};
 
 		// next inst, zero, ALU res, read_data_2
-		reg [159:0] EX_MEM_pipe;
-		initial EX_MEM_pipe = 160'bX;
+		reg [127:0] EX_MEM_pipe;
+		initial EX_MEM_pipe = 128'bX;
 
 		always @(posedge clk or posedge rst) begin
 			if (rst)
-				EX_MEM_pipe <= 160'b0;
+				EX_MEM_pipe <= 128'b0;
 			else
-				// 	26 extra,, 5 control, 1 zero, 32 WB addr, 
+				// 	21 extra, 5 control, 1 zero, 5 WB addr, 
 				//	32 branch address, 32 alures, 32 read data 2
-				EX_MEM_pipe <= {26'b0, EX_control_signals, EX_alu_zero, 
+				EX_MEM_pipe <= {21'b0, EX_control_signals, EX_alu_zero, 
 					EX_reg_file_write_address, EX_branch_address, 
 					EX_alu_result, EX_read_data_2};
 		end
@@ -476,33 +489,26 @@ module single_cycle_mips_32(clk, rst);
 		wire MEM_RegWrite;
 		wire MEM_MemRead;
 		wire MEM_MemWrite;
+		wire MEM_Branch;
 		wire MEM_PCSrc;
 
-		assign MEM_MemToReg = EX_MEM_pipe[133];
-		assign MEM_RegWrite = EX_MEM_pipe[132];
-		assign MEM_MemRead = EX_MEM_pipe[131];
-		assign MEM_MemWrite = EX_MEM_pipe[130];
-		assign MEM_PCSrc = EX_MEM_pipe[129];
+		assign MEM_MemToReg = EX_MEM_pipe[106];
+		assign MEM_RegWrite = EX_MEM_pipe[105];
+		assign MEM_MemRead = EX_MEM_pipe[104];
+		assign MEM_MemWrite = EX_MEM_pipe[103];
+		assign MEM_Branch = EX_MEM_pipe[102];
+		assign MEM_PCSrc = MEM_Branch & MEM_zero;
 
 		wire MEM_zero;
-		wire [31:0] MEM_reg_file_write_address;
+		wire [4:0] MEM_reg_file_write_address;
 		wire [31:0] MEM_branch_address;
 		wire [31:0] MEM_alu_result;
 		wire [31:0] MEM_read_data_2;
 
-		// for branch equality
-		assign MEM_zero = EX_MEM_pipe[128];
-
-		// write back address
-		assign MEM_reg_file_write_address = EX_MEM_pipe[127:96];
-
-		// for IF
+		assign MEM_zero = EX_MEM_pipe[101];
+		assign MEM_reg_file_write_address = EX_MEM_pipe[100:96];
 		assign MEM_branch_address = EX_MEM_pipe[95:64];
-
-		// can also bypass data and go straight to WB
 		assign MEM_alu_result = EX_MEM_pipe[63:32];
-
-		// SW data
 		assign MEM_read_data_2 = EX_MEM_pipe[31:0];
 
 		///////////////////////////////////////////////////////////////////////
@@ -511,13 +517,13 @@ module single_cycle_mips_32(clk, rst);
 		//
 		///////////////////////////////////////////////////////////////////////
 
-		wire [31:0] MEM_data;
+		wire [31:0] MEM_mem_data;
 
-		// lower 6 address bits are focused on because of the address size
+		// lower 6 address bits are focused on because of the address size (64)
 		data_mem_64x32 data_mem(
 			.clk(clk),
 			.addr(MEM_alu_result[5:0]),
-			.rd(MEM_data),
+			.rd(MEM_mem_data),
 			.wd(MEM_read_data_2),
 			.memwrite(MEM_MemWrite),
 			.memread(MEM_MemRead)
@@ -540,9 +546,9 @@ module single_cycle_mips_32(clk, rst);
 			if (rst)
 				MEM_WB_pipe <= 64'b0;
 			else
-				// 30 extra, 2 control, 32 LW data, 32 alu res
-				MEM_WB_pipe <= {30'b0, MEM_control_signals, MEM_data, 
-					MEM_alu_result};
+				// 25 extra, 5 address, 2 control, 32 LW data, 32 alu res
+				MEM_WB_pipe <= {25'b0, MEM_reg_file_write_address, 
+					MEM_control_signals, MEM_mem_data, MEM_alu_result};
 		end
 
 	///////////////////////////////////////////////////////////////////////////
@@ -555,16 +561,18 @@ module single_cycle_mips_32(clk, rst);
 
 		wire WB_RegWrite;
 		wire WB_MemToReg;
+		wire WB_reg_file_write_address;
 
+		assign WB_reg_file_write_address = MEM_WB_pipe[70:66];
 		assign WB_RegWrite = MEM_WB_pipe[65];
 		assign WB_MemToReg = MEM_WB_pipe[64];
 
-		wire [31:0] WB_data;
+		wire [31:0] WB_mem_data;
 		wire [31:0] WB_alu_result;
-		wire [31:0] WB_write_back;
+		wire [31:0] WB_write_back_data;
 
-		assign WB_data = MEM_WB_pipe[63:32];
+		assign WB_mem_data = MEM_WB_pipe[63:32];
 		assign WB_alu_result = MEM_WB_pipe[31:0];
-		assign WB_write_back = WB_MemToReg ? WB_data : WB_alu_result;
+		assign WB_write_back_data = WB_MemToReg ? WB_mem_data : WB_alu_result;
 
 endmodule
