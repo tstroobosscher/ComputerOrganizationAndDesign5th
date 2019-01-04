@@ -49,7 +49,7 @@
 	Is there anyway to avoid the hardcoding of buswidths and wire indexes?
  */
 
-module single_cycle_mips_32(clk, rst);
+module five_stage_pipeline_mips_32(clk, rst);
 	input clk;
 	input rst;
 
@@ -76,7 +76,7 @@ module single_cycle_mips_32(clk, rst);
 		wire [31:0] IF_program_counter_plus_4;
 		wire [31:0] IF_instruction;
 
-		assign IF_program_counter_plus_4 = IF_program_counter + 4;
+		assign IF_program_counter_plus_4 = program_counter + 4;
 		// PCSrc comes from the Mem stage
 		assign IF_next_instruction = MEM_PCSrc ? MEM_next_instruction : 
 			IF_program_counter_plus_4;
@@ -148,7 +148,7 @@ module single_cycle_mips_32(clk, rst);
 		localparam BRANCH 		= 6'b000100;
 
 		reg ID_RegDst;
-		reg ID_PCSrc;
+		reg ID_Branch;
 		reg ID_MemRead;
 		reg ID_MemToReg;
 		reg [1:0] ID_AluOP;
@@ -157,7 +157,7 @@ module single_cycle_mips_32(clk, rst);
 		reg ID_RegWrite;
 
 		initial ID_RegDst = 1'b0;
-		initial ID_PCSrc = 1'b0;
+		initial ID_Branch = 1'b0;
 		initial ID_MemRead = 1'b0;
 		initial ID_MemToReg = 1'b0;
 		initial ID_AluOP = 2'b00;
@@ -220,6 +220,7 @@ module single_cycle_mips_32(clk, rst);
 					ID_AluOP <= 2'b00;
 					// increment PC
 					ID_Branch <= 1'b0;
+				end
 				BRANCH 		: begin
 					// second data field not used
 					ID_RegDst <= 1'bX;
@@ -248,7 +249,7 @@ module single_cycle_mips_32(clk, rst);
 					ID_MemRead <= 1'bX;
 					ID_MemWrite <= 1'bX; 
 					ID_AluOP <= 2'bXX;
-					ID_PCSrc <= 1'bX;
+					ID_Branch <= 1'bX;
 				end
 			endcase
 		end
@@ -561,7 +562,7 @@ module single_cycle_mips_32(clk, rst);
 
 		wire WB_RegWrite;
 		wire WB_MemToReg;
-		wire WB_reg_file_write_address;
+		wire [4:0] WB_reg_file_write_address;
 
 		assign WB_reg_file_write_address = MEM_WB_pipe[70:66];
 		assign WB_RegWrite = MEM_WB_pipe[65];

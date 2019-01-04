@@ -1,54 +1,124 @@
 [*]
 [*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
-[*] Mon Dec 31 17:35:04 2018
+[*] Thu Jan  3 15:29:06 2019
 [*]
-[dumpfile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/single_cycle/simulation.vcd"
-[dumpfile_mtime] "Mon Dec 31 17:34:12 2018"
-[dumpfile_size] 99791
-[savefile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/single_cycle/test.gtkw"
+[dumpfile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/pipeline/simulation.vcd"
+[dumpfile_mtime] "Thu Jan  3 15:18:06 2019"
+[dumpfile_size] 7425
+[savefile] "/home/simplifi/Desktop/Verilog/ComputerOrganizationAndDesign5th/mips/pipeline/test.gtkw"
 [timestart] 0
 [size] 1855 1056
-[pos] -856 -429
-*-13.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -1 -1
+*-13.000000 4710 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_bench.
 [sst_width] 225
-[signals_width] 286
+[signals_width] 363
 [sst_expanded] 1
 [sst_vpaned_height] 320
-@28
-test_bench.UUT.ALUSrc
-test_bench.UUT.AluOP[1:0]
-test_bench.UUT.Branch
-test_bench.UUT.MemRead
-test_bench.UUT.MemToReg
-test_bench.UUT.MemWrite
-test_bench.UUT.PCSrc
-test_bench.UUT.RegDst
-test_bench.UUT.RegWrite
 @22
-test_bench.UUT.address_calc[31:0]
 test_bench.UUT.alu_control[3:0]
-test_bench.UUT.alu_input_1[31:0]
-test_bench.UUT.alu_input_2[31:0]
-test_bench.UUT.alu_result[31:0]
 @28
-test_bench.UUT.alu_zero
 test_bench.UUT.clk
 @22
-test_bench.UUT.data_mem_data[31:0]
 test_bench.UUT.funct_control[5:0]
-test_bench.UUT.immediate_shift_left_2[31:0]
-test_bench.UUT.instruction[31:0]
-test_bench.UUT.next_instruction[31:0]
 test_bench.UUT.program_counter[31:0]
-test_bench.UUT.program_counter_plus_4[31:0]
-test_bench.UUT.read_data_1[31:0]
-test_bench.UUT.read_data_2[31:0]
 @28
 test_bench.UUT.rst
+test_bench.UUT.EX_ALUSrc
+test_bench.UUT.EX_AluOP
+test_bench.UUT.EX_Branch
 @22
-test_bench.UUT.sign_extended_immediate_16[31:0]
-test_bench.UUT.write_address[4:0]
-test_bench.UUT.write_data[31:0]
+test_bench.UUT.EX_MEM_pipe[127:0]
+@28
+test_bench.UUT.EX_MemRead
+test_bench.UUT.EX_MemToReg
+test_bench.UUT.EX_MemWrite
+test_bench.UUT.EX_RegDst
+test_bench.UUT.EX_RegWrite
+@22
+test_bench.UUT.EX_alu_input_1[31:0]
+test_bench.UUT.EX_alu_input_2[31:0]
+test_bench.UUT.EX_alu_result[31:0]
+@28
+test_bench.UUT.EX_alu_zero
+@22
+test_bench.UUT.EX_branch_address[31:0]
+test_bench.UUT.EX_control_signals[4:0]
+test_bench.UUT.EX_immediate_shift_left_2[31:0]
+test_bench.UUT.EX_program_counter_plus_4[31:0]
+test_bench.UUT.EX_rd[4:0]
+test_bench.UUT.EX_read_data_1[31:0]
+test_bench.UUT.EX_read_data_2[31:0]
+test_bench.UUT.EX_reg_file_write_address[4:0]
+test_bench.UUT.EX_rt[4:0]
+test_bench.UUT.EX_sign_ext_immediate_32[31:0]
+@28
+test_bench.UUT.ID_ALUSrc
+test_bench.UUT.ID_AluOP[1:0]
+test_bench.UUT.ID_Branch
+@22
+test_bench.UUT.ID_EX_pipe[159:0]
+@28
+test_bench.UUT.ID_MemRead
+test_bench.UUT.ID_MemToReg
+test_bench.UUT.ID_MemWrite
+test_bench.UUT.ID_RegDst
+test_bench.UUT.ID_RegWrite
+@22
+test_bench.UUT.ID_control_signals[8:0]
+test_bench.UUT.ID_instruction[31:0]
+test_bench.UUT.ID_program_counter_plus_4[31:0]
+test_bench.UUT.ID_rd[4:0]
+test_bench.UUT.ID_read_data_1[31:0]
+test_bench.UUT.ID_read_data_2[31:0]
+test_bench.UUT.ID_rt[4:0]
+test_bench.UUT.ID_sign_ext_immediate_32[31:0]
+test_bench.UUT.IF_ID_pipe[63:0]
+test_bench.UUT.IF_instruction[31:0]
+test_bench.UUT.IF_next_instruction[31:0]
+@29
+test_bench.UUT.IF_program_counter
+@22
+test_bench.UUT.IF_program_counter_plus_4[31:0]
+@28
+test_bench.UUT.MEM_Branch
+test_bench.UUT.MEM_MemRead
+test_bench.UUT.MEM_MemToReg
+test_bench.UUT.MEM_MemWrite
+test_bench.UUT.MEM_PCSrc
+test_bench.UUT.MEM_RegWrite
+@22
+test_bench.UUT.MEM_WB_pipe[95:0]
+test_bench.UUT.MEM_alu_result[31:0]
+test_bench.UUT.MEM_branch_address[31:0]
+@28
+test_bench.UUT.MEM_control_signals[1:0]
+@22
+test_bench.UUT.MEM_mem_data[31:0]
+@28
+test_bench.UUT.MEM_next_instruction
+@22
+test_bench.UUT.MEM_read_data_2[31:0]
+test_bench.UUT.MEM_reg_file_write_address[4:0]
+@28
+test_bench.UUT.MEM_zero
+test_bench.UUT.WB_MemToReg
+test_bench.UUT.WB_RegWrite
+@22
+test_bench.UUT.WB_alu_result[31:0]
+test_bench.UUT.WB_mem_data[31:0]
+test_bench.UUT.WB_reg_file_write_address[4:0]
+test_bench.UUT.WB_write_back_data[31:0]
+test_bench.UUT.alu_control[3:0]
+@28
+test_bench.UUT.clk
+@22
+test_bench.UUT.funct_control[5:0]
+@28
+test_bench.UUT.pc_init
+@22
+test_bench.UUT.program_counter[31:0]
+@28
+test_bench.UUT.rst
 [pattern_trace] 1
 [pattern_trace] 0
