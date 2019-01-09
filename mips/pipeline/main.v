@@ -91,6 +91,7 @@ module five_stage_pipeline_mips_32(clk, rst);
 			if (rst) begin
 				// reset precedence
 				program_counter <= 32'bX;
+				pc_init <= 1'b0;
 			end
 			else begin
 
@@ -281,6 +282,7 @@ module five_stage_pipeline_mips_32(clk, rst);
 
 		register_file reg_file(
 			.clk(clk),
+			.rst(rst),
 			.ra1(ID_instruction[25:21]),
 			.ra2(ID_instruction[20:16]),
 			.wa(WB_reg_file_write_address),
@@ -745,6 +747,7 @@ module five_stage_pipeline_mips_32(clk, rst);
 		// lower 6 address bits are focused on because of the address size (64)
 		data_mem_64x32 data_mem(
 			.clk(clk),
+			.rst(rst),
 			.addr(MEM_alu_result[5:0]),
 			.rd(MEM_mem_data),
 			.wd(MEM_read_data_2),
