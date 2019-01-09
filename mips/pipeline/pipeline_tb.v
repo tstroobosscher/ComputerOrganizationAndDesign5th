@@ -111,6 +111,8 @@ module test_bench#(
 	// program
 	initial begin
 
+		rst_tb = 1'b1;
+
 		// wait 2 clocks
 		#(2*CLK_PERIOD);
 		rst_tb = 1'b0;
@@ -124,8 +126,6 @@ module test_bench#(
 		//	LW
 		//
 		///////////////////////////////////////////////////////////////////////
-
-		UUT.program_counter = 0;
 
 		$display("test_bench: running test: LW");
 		UUT.inst_mem.memory[0] = {LOAD_WORD, 5'd31, 5'd0, 16'd0};
@@ -147,6 +147,8 @@ module test_bench#(
 		///////////////////////////////////////////////////////////////////////
 
 		rst_tb = 1'b1;
+
+		// wait 2 clocks
 		#(2*CLK_PERIOD);
 		rst_tb = 1'b0;
 
@@ -163,41 +165,200 @@ module test_bench#(
 		else
 			$display("test_bench: SW success");
 
-		// UUT.inst_mem.memory[1] = {LOAD_WORD, 5'd31, 5'd2, 16'd0};
-		// UUT.inst_mem.memory[2] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, ADD};
-		// UUT.inst_mem.memory[3] = {STORE_WORD, 5'd0, 5'd3, 16'd0};
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	ADD
+		//
+		///////////////////////////////////////////////////////////////////////
 
-		// // SUB
-		// UUT.inst_mem.memory[4] = {LOAD_WORD, 5'd31, 5'd1, 16'd0};
-		// UUT.inst_mem.memory[5] = {LOAD_WORD, 5'd30, 5'd2, 16'd0};
-		// UUT.inst_mem.memory[6] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, SUB};
-		// UUT.inst_mem.memory[7] = {STORE_WORD, 5'd0, 5'd3, 16'd0};
+		rst_tb = 1'b1;
 
-		// // OR
-		// UUT.inst_mem.memory[8] = {LOAD_WORD, 5'd0, 5'd1, 16'd25};
-		// UUT.inst_mem.memory[9] = {LOAD_WORD, 5'd0, 5'd2, 16'd16};
-		// UUT.inst_mem.memory[10] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, OR};
-		// UUT.inst_mem.memory[11] = {STORE_WORD, 5'd0, 5'd3, 16'd14};
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
 
-		// //AND
-		// UUT.inst_mem.memory[12] = {LOAD_WORD, 5'd0, 5'd1, 16'd22};
-		// UUT.inst_mem.memory[13] = {LOAD_WORD, 5'd0, 5'd2, 16'd12};
-		// UUT.inst_mem.memory[14] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, AND};
-		// UUT.inst_mem.memory[15] = {STORE_WORD, 5'd0, 5'd3, 16'd14};
+		$display("test_bench: running test: ADD");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd1, 5'd2, 5'd0, 5'b0, ADD};
 
-		// //SLT
-		// UUT.inst_mem.memory[16] = {LOAD_WORD, 5'd0, 5'd1, 16'd4};
-		// UUT.inst_mem.memory[17] = {LOAD_WORD, 5'd0, 5'd2, 16'd5};
-		// UUT.inst_mem.memory[18] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, SLT};
-		// UUT.inst_mem.memory[19] = {STORE_WORD, 5'd0, 5'd3, 16'd14};
+		expected_value = UUT.reg_file.memory[1] + UUT.reg_file.memory[2];
 
-		// // NOR
-		// UUT.inst_mem.memory[20] = {LOAD_WORD, 5'd0, 5'd1, 16'd22};
-		// UUT.inst_mem.memory[21] = {LOAD_WORD, 5'd0, 5'd2, 16'd12};
-		// UUT.inst_mem.memory[22] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, NOR};
-		// UUT.inst_mem.memory[23] = {STORE_WORD, 5'd14, 5'd3, 16'd0};
+		#(5*CLK_PERIOD);
 
-		// #(23*CLK_PERIOD);
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: ADD failure");
+		else
+			$display("test_bench: ADD success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	SUB
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: SUB");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd2, 5'd1, 5'd0, 5'b0, SUB};
+
+		expected_value = UUT.reg_file.memory[2] - UUT.reg_file.memory[1];
+
+		#(5*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: SUB failure");
+		else
+			$display("test_bench: SUB success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	AND
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: AND");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd2, 5'd1, 5'd0, 5'b0, AND};
+
+		expected_value = UUT.reg_file.memory[2] & UUT.reg_file.memory[1];
+
+		#(5*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: AND failure");
+		else
+			$display("test_bench: AND success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	OR
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: OR");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd2, 5'd1, 5'd0, 5'b0, OR};
+
+		expected_value = UUT.reg_file.memory[2] | UUT.reg_file.memory[1];
+
+		#(5*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: OR failure");
+		else
+			$display("test_bench: OR success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	NOR
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: NOR");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd2, 5'd1, 5'd0, 5'b0, NOR};
+
+		expected_value = ~(UUT.reg_file.memory[2] | UUT.reg_file.memory[1]);
+
+		#(5*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: NOR failure");
+		else
+			$display("test_bench: NOR success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	SLT
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: SLT");
+		UUT.inst_mem.memory[0] = {R_TYPE, 5'd1, 5'd2, 5'd0, 5'b0, SLT};
+
+		expected_value = 32'b1;
+
+		#(5*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.reg_file.memory[0] != expected_value)
+			$display("test_bench: SLT failure");
+		else
+			$display("test_bench: SLT success");
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	BEQ
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: BEQ: taken");
+		UUT.inst_mem.memory[0] = {BRANCH_EQ, 5'd1, 5'd1, 16'd5};
+
+		expected_value = UUT.program_counter + 4 + 5*4;
+
+		#(2*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.program_counter != expected_value)
+			$display("test_bench: BEQ: taken failure");
+		else
+			$display("test_bench: BEQ: taken success");
+
+		rst_tb = 1'b1;
+
+		// wait 2 clocks
+		#(2*CLK_PERIOD);
+		rst_tb = 1'b0;
+
+		$display("test_bench: running test: BEQ: not taken");
+		UUT.inst_mem.memory[0] = {BRANCH_EQ, 5'd1, 5'd2, -16'd29};
+
+		expected_value = UUT.program_counter + 4;
+
+		#(2*CLK_PERIOD);
+
+		#CLK_PERIOD;
+		if(UUT.program_counter != expected_value)
+			$display("test_bench: BEQ: not taken failure");
+		else
+			$display("test_bench: BEQ: not taken success");
+
 
 		// reserve margin at the end of test
 		#(10*CLK_PERIOD);
