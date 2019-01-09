@@ -292,6 +292,44 @@ module five_stage_pipeline_mips_32(clk, rst);
 
 		///////////////////////////////////////////////////////////////////////
 		//
+		//	Early Branch Forwarding Multiplexors -> ID
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		localparam EARLY_BRANCH_FORWARD_ID = 2'b00;
+		localparam EARLY_BRANCH_FORWARD_MEM = 2'b01;
+		localparam EARLY_BRANCH_FORWARD_WB = 2'b10;
+
+		reg [1:0] FORWARD_BRANCH_A;
+		reg [1:0] FORWARD_BRANCH_B;
+
+		reg [31:0] ID_branch_data_1;
+		reg [31:0] ID_branch_data_2;
+
+		always @(*) begin
+			case(FORWARD_BRANCH_A)
+				EARLY_BRANCH_FORWARD_ID		:
+					ID_branch_data_1 <= ID_read_data_1;
+				EARLY_BRANCH_FORWARD_MEM	:
+					ID_branch_data_1 <= MEM_alu_result;
+				EARLY_BRANCH_FORWARD_WB		:
+					ID_branch_data_1 <= WB_write_back_data;
+			endcase
+		end
+
+		always @(*) begin
+			case(FORWARD_BRANCH_B)
+				EARLY_BRANCH_FORWARD_ID		:
+					ID_branch_data_2 <= ID_read_data_2;
+				EARLY_BRANCH_FORWARD_MEM	:
+					ID_branch_data_2 <= MEM_alu_result;
+				EARLY_BRANCH_FORWARD_WB		:
+					ID_branch_data_2 <= WB_write_back_data;
+			endcase
+		end
+
+		///////////////////////////////////////////////////////////////////////
+		//
 		//	Sign Extender -> ID
 		//
 		///////////////////////////////////////////////////////////////////////
@@ -309,18 +347,67 @@ module five_stage_pipeline_mips_32(clk, rst);
 		//
 		///////////////////////////////////////////////////////////////////////
 
-		reg stall;
+		wire stall;
 
-		initial stall = 0;
+		reg hazard_stall;
+
+		initial hazard_stall = 0;
 
 		//	test if load instruction in the EX stage, then check if the 
 		//	subsequent instruction is dependent on the LW result
 
 		always @(*) begin
 			if(EX_MemRead & ((EX_rt == ID_rs) | (EX_rt == ID_rt)))
-				stall = 1'b1;
+				hazard_stall <= 1'b1;
 			else
-				stall = 1'b0;
+				hazard_stall <= 1'b0;
+		end
+
+		reg early_branch_stall;
+
+		always @(*) begin
+			//	if there is a branch in ID that depends on the result in EX,
+			//	must stall one cycle to get the correct value
+			//	if a LW is followed by a branch, the branch must stall 2 cycles
+			if(ID_Branch & EX_RegWrite & (ID_rs == EX_reg_file_write_address))
+				early_branch_stall <= 1'b1;
+			else if (ID_Branch & MEM_MemRead & 
+				(ID_rs == MEM_reg_file_write_address))
+				early_branch_stall <= 1'b1;
+			else begin
+				early_branch_stall <= 1'b0;
+			end
+		end
+
+		assign stall = hazard_stall | early_branch_stall;
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	Early Branch Forwarding Logic -> ID
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		//	Control Hazards
+		//	RS/RT and A/B respectively
+		always @(*) begin
+			//	if branch, and source address matches either MEM or WB 
+			//	destination branch, forward that result over the register file
+
+			if(ID_Branch & (ID_rs == MEM_reg_file_write_address))
+				FORWARD_BRANCH_A <= EARLY_BRANCH_FORWARD_MEM;
+			else if(ID_Branch & (ID_rs == WB_reg_file_write_address))
+				FORWARD_BRANCH_A <= EARLY_BRANCH_FORWARD_WB;
+			else
+				FORWARD_BRANCH_A <= EARLY_BRANCH_FORWARD_ID;
+		end
+
+		always @(*) begin
+			if(ID_Branch & (ID_rt == MEM_reg_file_write_address))
+				FORWARD_BRANCH_B <= EARLY_BRANCH_FORWARD_MEM;
+			else if(ID_Branch & (ID_rt == WB_reg_file_write_address))
+				FORWARD_BRANCH_B <= EARLY_BRANCH_FORWARD_WB;
+			else 
+				FORWARD_BRANCH_B <= EARLY_BRANCH_FORWARD_ID;
 		end
 
 		///////////////////////////////////////////////////////////////////////
@@ -355,7 +442,7 @@ module five_stage_pipeline_mips_32(clk, rst);
 				// 	8 extra 5 rs, 5 rt, 5 rd 9 control, 32 pc+4, 32 rd1,
 				//	32 rd2, 32 imm
 				ID_EX_pipe <= {8'b0, ID_rs, ID_rt, ID_rd, ID_control_signals, 
-				ID_program_counter_plus_4, ID_read_data_1, ID_read_data_2, 
+				ID_program_counter_plus_4, ID_branch_data_1, ID_branch_data_2, 
 				ID_sign_ext_immediate_32};
 		end
 
