@@ -75,10 +75,15 @@ module five_stage_pipeline_mips_32(clk, rst);
 		wire [31:0] IF_next_instruction;
 		wire [31:0] IF_program_counter_plus_4;
 		wire [31:0] IF_instruction;
+		wire PC_stall;
+		wire IF_stall;
+
+		assign PC_stall = stall;
+		assign IF_stall = stall;
 
 		assign IF_program_counter_plus_4 = program_counter + 4;
 		// PCSrc comes from the Mem stage
-		assign IF_next_instruction = MEM_PCSrc ? MEM_next_instruction : 
+		assign IF_next_instruction = MEM_PCSrc ? MEM_branch_address : 
 			IF_program_counter_plus_4;
 
 		// save logic for reset and first instruction
@@ -95,7 +100,13 @@ module five_stage_pipeline_mips_32(clk, rst);
 					pc_init <= 1'b1;
 				end
 				else begin
-					program_counter <= IF_next_instruction;	
+
+					// 	would probably be more accurate to build the PC enable
+					// 	and invert the logic
+					if (PC_stall) 
+						program_counter <= program_counter;
+					else
+						program_counter <= IF_next_instruction;	
 				end
 			end
 		end
@@ -120,8 +131,11 @@ module five_stage_pipeline_mips_32(clk, rst);
 				IF_ID_pipe <= 64'b0;
 
 			else
-				// 63:32 -> pc+4, 31:0 -> instruction
-				IF_ID_pipe <= {IF_program_counter_plus_4, IF_instruction};
+				if(IF_stall)
+					IF_ID_pipe <= IF_ID_pipe;
+				else 
+					// 	63:32 -> pc+4, 31:0 -> instruction
+					IF_ID_pipe <= {IF_program_counter_plus_4, IF_instruction};
 		end
 
 	///////////////////////////////////////////////////////////////////////////
@@ -291,6 +305,26 @@ module five_stage_pipeline_mips_32(clk, rst);
 
 		///////////////////////////////////////////////////////////////////////
 		//
+		//	Hazard Detection Unit -> ID
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		reg stall;
+
+		initial stall = 0;
+
+		//	test if load instruction in the EX stage, then check if the 
+		//	subsequent instruction is dependent on the LW result
+
+		always @(*) begin
+			if(EX_MemRead & ((EX_rt == ID_rs) | (EX_rt == ID_rt)))
+				stall = 1'b1;
+			else
+				stall = 1'b0;
+		end
+
+		///////////////////////////////////////////////////////////////////////
+		//
 		//	ID/EX Pipe signals
 		//
 		///////////////////////////////////////////////////////////////////////
@@ -308,6 +342,9 @@ module five_stage_pipeline_mips_32(clk, rst);
 		reg [159:0] ID_EX_pipe;
 		initial ID_EX_pipe = 160'bX;
 
+		wire [4:0] ID_rs;
+		assign  ID_rs = ID_instruction[25:21];
+
 		always @(posedge clk or posedge rst) begin
 			if (rst)
 
@@ -315,9 +352,9 @@ module five_stage_pipeline_mips_32(clk, rst);
 				ID_EX_pipe <= 160'b0;
 
 			else
-				// 	13 extra, 5 rt, 5 rd 9 control, 32 pc+4, 32 rd1, 32 rd2, 
-				//	32 imm
-				ID_EX_pipe <= {13'b0, ID_rt, ID_rd, ID_control_signals, 
+				// 	8 extra 5 rs, 5 rt, 5 rd 9 control, 32 pc+4, 32 rd1,
+				//	32 rd2, 32 imm
+				ID_EX_pipe <= {8'b0, ID_rs, ID_rt, ID_rd, ID_control_signals, 
 				ID_program_counter_plus_4, ID_read_data_1, ID_read_data_2, 
 				ID_sign_ext_immediate_32};
 		end
@@ -332,9 +369,11 @@ module five_stage_pipeline_mips_32(clk, rst);
 
 		wire [4:0] EX_rt;
 		wire [4:0] EX_rd;
+		wire [4:0] EX_rs;
 
 		assign EX_rt = ID_EX_pipe[146:142];
 		assign EX_rd = ID_EX_pipe[141:137];
+		assign EX_rs = ID_EX_pipe[151:147];
 
 		wire EX_RegDst;
 		wire EX_ALUSrc;
@@ -363,6 +402,62 @@ module five_stage_pipeline_mips_32(clk, rst);
 		assign EX_read_data_1 = ID_EX_pipe[95:64];
 		assign EX_read_data_2 = ID_EX_pipe[63:32];
 		assign EX_sign_ext_immediate_32 = ID_EX_pipe[31:0];
+
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	Forwarding Multiplexors -> EX
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		// Depending on forwarding signals, can either send EX, MEM, or WB
+		// So far we are only forwarding from MEM/WB to EX
+		// There needs to be a priority on MEM forwarding over WB forwarding
+		// Since MEM has the most recent data, its value should be carried over
+		// the WB value, which is slightly older
+
+		localparam FORWARD_EX_EX = 00;
+		localparam FORWARD_EX_MEM = 01;
+		localparam FORWARD_EX_WB = 10;
+
+		reg [1:0] FORWARD_A;
+		reg [1:0] FORWARD_B;
+		reg [31:0] EX_forward_res_1;
+		reg [31:0] EX_forward_res_2;
+		wire [31:0] EX_alu_input_1;
+		wire [31:0] EX_alu_input_2;
+
+		// A
+		always @(*) begin
+			case(FORWARD_A)
+				FORWARD_EX_WB	:
+					EX_forward_res_1 <= WB_write_back_data;
+				FORWARD_EX_MEM	:
+					EX_forward_res_1 <= MEM_alu_result;
+				FORWARD_EX_EX	:
+					EX_forward_res_1 <= EX_read_data_1;
+				default 		:
+					EX_forward_res_1 <= 32'bX;
+			endcase
+		end
+
+		// B
+		always @(*) begin
+			case(FORWARD_B)
+				FORWARD_EX_WB	:
+					EX_forward_res_2 <= WB_write_back_data;
+				FORWARD_EX_MEM	:
+					EX_forward_res_2 <= MEM_alu_result;
+				FORWARD_EX_EX	:
+					EX_forward_res_2 <= EX_read_data_2;
+				default 		:
+					EX_forward_res_2 <= 32'bX;
+			endcase
+		end
+
+		assign EX_alu_input_1 = EX_forward_res_1;
+		assign EX_alu_input_2 = EX_ALUSrc ? EX_sign_ext_immediate_32 : 
+			EX_forward_res_2;
 
 		///////////////////////////////////////////////////////////////////////
 		//
@@ -418,14 +513,8 @@ module five_stage_pipeline_mips_32(clk, rst);
 				alu_control <= 4'bXXXX;
 		end
 
-		wire [31:0] EX_alu_input_1;
-		wire [31:0] EX_alu_input_2;
 		wire [31:0] EX_alu_result;
 		wire EX_alu_zero;
-
-		assign EX_alu_input_1 = EX_read_data_1;
-		assign EX_alu_input_2 = EX_ALUSrc ? EX_sign_ext_immediate_32 : 
-			EX_read_data_2;
 
 		alu alu(
 			.alucont(alu_control),
@@ -448,6 +537,52 @@ module five_stage_pipeline_mips_32(clk, rst);
 			2'b0};
 		assign EX_branch_address = EX_program_counter_plus_4 + 
 			EX_immediate_shift_left_2;
+
+		///////////////////////////////////////////////////////////////////////
+		//
+		//	Forwarding Unit -> EX
+		//
+		///////////////////////////////////////////////////////////////////////
+
+		//	forwarding to the RS
+		always @(*) begin
+			//	if write reg instruction, and destination isn't 0, and the 
+			// 	destination address matches an the RS address in EX, then
+			// 	send the MEM result to EX
+			if (MEM_RegWrite & (MEM_reg_file_write_address != 0) &
+				(MEM_reg_file_write_address == EX_rs)) begin
+					FORWARD_A <= FORWARD_EX_MEM;
+			end
+
+			// 	else if write reg instruction in the WB stage and the
+			//	destination isnt zero, then send the WB result to EX
+			// 	Important! the MEM stage is given priority
+			else if(WB_RegWrite & (WB_reg_file_write_address != 0) &  
+				(WB_reg_file_write_address == EX_rs)) begin 
+					FORWARD_A <= FORWARD_EX_WB;
+			end
+
+			else begin
+					FORWARD_A <= FORWARD_EX_EX;
+			end
+		end
+
+		// 	forwarding signals to the RT
+		always @(*) begin
+			if (MEM_RegWrite & (MEM_reg_file_write_address != 0) &
+				(MEM_reg_file_write_address == EX_rt)) begin
+					FORWARD_B <= FORWARD_EX_MEM;
+			end
+
+			else if(WB_RegWrite & (WB_reg_file_write_address != 0) &
+				(WB_reg_file_write_address == EX_rt)) begin
+					FORWARD_B <= FORWARD_EX_WB;
+			end
+
+			else begin
+					FORWARD_B <= FORWARD_EX_EX;
+			end
+		end
 
 		///////////////////////////////////////////////////////////////////////
 		//
@@ -474,7 +609,7 @@ module five_stage_pipeline_mips_32(clk, rst);
 				//	32 branch address, 32 alures, 32 read data 2
 				EX_MEM_pipe <= {21'b0, EX_control_signals, EX_alu_zero, 
 					EX_reg_file_write_address, EX_branch_address, 
-					EX_alu_result, EX_read_data_2};
+					EX_alu_result, EX_forward_res_2};
 		end
 
 

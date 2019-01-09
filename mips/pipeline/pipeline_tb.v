@@ -115,6 +115,7 @@ module test_bench#(
 
 		// Dont forget R-Type shamt! 5'b0
 		// ADD
+
 		UUT.inst_mem.memory[0] = {LOAD_WORD, 5'd31, 5'd1, 16'd0};
 		UUT.inst_mem.memory[1] = {LOAD_WORD, 5'd31, 5'd2, 16'd0};
 		UUT.inst_mem.memory[2] = {R_TYPE, 5'd1, 5'd2, 5'd3, 5'b0, ADD};
